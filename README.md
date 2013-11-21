@@ -3,7 +3,9 @@ cmu-grades
 
 Provides an API for automated login to CMU services. Contains a few sample programs for extracting data from Academic Audit and Blackboard. Please email [willcrichton@cmu.edu](mailto:willcrichton@cmu.edu) with any issues.
 
-To use the provided authorization functions, you need to change your `config.py` file to look like:
+To setup, first you need to install [pip](https://pypi.python.org/pypi/pip) and run `pip install -r requirements.txt`.
+
+Then, to use the provided authorization functions, you need to change your `config.py` file to look like:
    
     USERNAME = 'ANDREWID'
     PASSWORD = 'YOURPASSWORD'
