@@ -1,19 +1,32 @@
 from pyquery import PyQuery as pq
 from auth import authenticate
 from datetime import datetime
+from urllib import urlencode
 import re
 import json
+
 
 ''' get_final_grades() : extracts your grades from CMU's academic audit
 returns a json of course -> letter grade (string)
 * means you're taking the class and grades haven't been put in yet
 AP means you got it through AP credit
+P is pass
 '''
 def get_final_grades():
     s = authenticate('https://enr-apps.as.cmu.edu/audit/audit')
 
-    # todo: make this dynamic
-    classes = s.get('https://enr-apps.as.cmu.edu/audit/audit?call=7&MajorFile=2010:SCS:BS:CS.MAJ&college=college&year=catalog_year&major=degree+in+major').content
+    # find out the params for main major auditing
+    mainFrame = s.get('https://enr-apps.as.cmu.edu/audit/audit?call=2').content
+    d = pq(mainFrame)
+    params = {'call': 7}
+    for htmlInput in d('input[type=hidden]'):
+        name = d(htmlInput).attr('name')
+        value = d(htmlInput).attr('value')
+        if name != 'call':
+            params[name] = value
+
+    # get page for given major
+    classes = s.get('https://enr-apps.as.cmu.edu/audit/audit?' + urlencode(params)).content
     
     # take grades from <pre>s in the page
     d = pq(classes)
@@ -51,13 +64,6 @@ raises an Exception if blackboard refuses to respond (which it does sometimes, q
 '''
 def get_blackboard_grades():
     s = authenticate('https://blackboard.andrew.cmu.edu')
-
-    # make sure our headers are right for blackboard 
-    # TODO: are all of these necessary?
-    s.headers['Origin'] = 'https://blackboard.andrew.cmu.edu'
-    s.headers['Referer'] = 'https://blackboard.andrew.cmu.edu/webapps/streamViewer/streamViewer?cmd=view&streamName=mygrades_d&&override_stream=mygrade'
-    s.headers['X-Prototype-Version'] = '1.7'
-    s.headers['X-Requested-With'] = 'XMLHttpRequest'
 
     ''' As of November 2013, Blackboard loads grades dynamically in these "streams"
     so we request a stream containing a list of courses and then request grades for each course
@@ -100,6 +106,3 @@ def get_blackboard_grades():
             grades[course][hw] = [float(matches.group(1)), float(matches.group(2))]
 
     return grades
-
-print get_blackboard_grades()
-
