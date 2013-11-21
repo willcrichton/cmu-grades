@@ -1,7 +1,7 @@
 cmu-grades
 ==========
 
-Provides an API for automated login to CMU services. Contains a few sample programs for extracting data from Academic Audit and Blackboard. Please email [willcrichton@cmu.edu](willcrichton@cmu.edu) with any issues.
+Provides an API for automated login to CMU services. Contains a few sample programs for extracting data from Academic Audit and Blackboard. Please email [willcrichton@cmu.edu](mailto:willcrichton@cmu.edu) with any issues.
 
 To use the provided authorization functions, you need to change your `config.py` file to look like:
    
