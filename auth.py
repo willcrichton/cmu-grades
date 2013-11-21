@@ -3,11 +3,11 @@ from HTMLParser import HTMLParser
 from config import *
 import requests
 
-''' authenticate(url) queries an asset behind CMU's WebISO wall
-it uses Shibboleth authentication (see: http://dev.e-taxonomy.eu/trac/wiki/ShibbolethProtocol)
-note that you can use this to authenticate stuff beyond just grades! (any CMU service)
-'''
 def authenticate(url):
+    ''' queries an asset behind CMU's WebISO wall
+    it uses Shibboleth authentication (see: http://dev.e-taxonomy.eu/trac/wiki/ShibbolethProtocol)
+    note that you can use this to authenticate stuff beyond just grades! (any CMU service)
+    '''
 
     # We're using a Requests (http://www.python-requests.org/en/latest/) session
     s = requests.Session()
@@ -24,7 +24,7 @@ def authenticate(url):
     # 3. Parse resultant HTML and send corresponding POST request
     # Here, if you were in a browser, you'd get fed an HTML form
     # that you don't actualy see--it submits instantly with some JS
-    # magic, but we don't have that luxury.
+    # magic, but we don't have that luxury, so we manually parse the form.
     class ShibbolethParser(HTMLParser):
         url = ''
         to_post = {}
@@ -52,3 +52,5 @@ def authenticate(url):
     s.post(parser.url, data=parser.to_post).content
 
     return s
+
+authenticate('https://enr-apps.as.cmu.edu/audit/audit')

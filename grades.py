@@ -6,13 +6,14 @@ import re
 import json
 
 
-''' get_final_grades() : extracts your grades from CMU's academic audit
-returns a json of course -> letter grade (string)
-* means you're taking the class and grades haven't been put in yet
-AP means you got it through AP credit
-P is pass
-'''
 def get_final_grades():
+    ''' extracts your grades from CMU's academic audit
+    returns a json of course -> letter grade (string)
+    * means you're taking the class and grades haven't been put in yet
+    AP means you got it through AP credit
+    P is pass
+    '''
+
     s = authenticate('https://enr-apps.as.cmu.edu/audit/audit')
 
     # find out the params for main major auditing
@@ -43,11 +44,12 @@ def get_final_grades():
     return courses
 
 
-''' get_sio() : get information from SIO
-CURRENTLY BROKEN: HOW DOES RPC WORK??? 
-TODO: FIX THIS
-'''
 def get_sio():
+    ''' get information from SIO
+    CURRENTLY BROKEN: HOW DOES RPC WORK??? 
+    TODO: FIX THIS
+    '''
+
     s = authenticate('https://s3.as.cmu.edu/sio/index.html')
     s.headers['Origin'] = 'https://s3.as.cmu.edu'
     s.headers['Referer'] = 'https://s3.as.cmu.edu/sio/index.html'
@@ -58,11 +60,12 @@ def get_sio():
     print s.post('https://s3.as.cmu.edu/sio/sio/grades.rpc', data='7|0|4|https://s3.as.cmu.edu/sio/sio/|D954B1065FB984249A8E6FE7AC94FE73|edu.cmu.s3.ui.sio.student.client.serverproxy.grades.GradesService|fetchSemesterGrades|1|2|3|4|0|').content
 
 
-''' get_blackboard_grades() : returns all your grades from the current semester
-returns a json of courses mapping to a json of homeworks mapping to an array of [score, total]
-raises an Exception if blackboard refuses to respond (which it does sometimes, query until it works)
-'''
 def get_blackboard_grades():
+    ''' returns all your grades from the current semester
+    returns a json of courses mapping to a json of homeworks mapping to an array of [score, total]
+    raises an Exception if blackboard refuses to respond (which it does sometimes, query until it works)
+    '''
+
     s = authenticate('https://blackboard.andrew.cmu.edu')
 
     ''' As of November 2013, Blackboard loads grades dynamically in these "streams"
