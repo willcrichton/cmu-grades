@@ -6,13 +6,13 @@ import smtplib
 import sys
 import os
 import json
-
-COMMAND = 'python %s run' % os.path.realpath(__file__)
+import site
 
 # writes job to the cron
 def install():
     cron = CronTab()
-    job = cron.new(command=COMMAND, comment='cmu-grades')
+    command = 'export PYTHONPATH=%s; python %s run' % (site.getsitepackages()[0], os.path.realpath(__file__))
+    job = cron.new(command=command, comment='cmu-grades')
     job.minute.every(5)
     cron.write()
     print 'Installed cmu-grades!'
