@@ -7,6 +7,9 @@ def authenticate(url):
     ''' queries an asset behind CMU's WebISO wall
     it uses Shibboleth authentication (see: http://dev.e-taxonomy.eu/trac/wiki/ShibbolethProtocol)
     note that you can use this to authenticate stuff beyond just grades! (any CMU service)
+    sample usage:
+        s = authenticate('https://enr-apps.as.cmu.edu/audit/audit')
+        print s.get('https://enr-apps.as.cmu.edu/audit/audit').content
     '''
 
     # We're using a Requests (http://www.python-requests.org/en/latest/) session
@@ -53,4 +56,4 @@ def authenticate(url):
 
     return s
 
-authenticate('https://enr-apps.as.cmu.edu/audit/audit')
+
