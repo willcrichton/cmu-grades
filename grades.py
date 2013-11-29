@@ -5,7 +5,6 @@ from urllib import urlencode
 import re
 import json
 
-
 def get_final_grades():
     ''' extracts your grades from CMU's academic audit
     returns a json of course -> letter grade (string)
@@ -84,12 +83,12 @@ def get_blackboard_grades():
     grades = {}
     now = datetime.now()
 
-    # Dunno what happens with summer courses, not worrying about that case
     currSemester = ('F' if now.month > 6 else 'S') + str(now.year % 100)
 
     for course_id, course in bbGrades['sv_extras']['sx_filters'][0]['choices'].iteritems():
 
         # we rely on blackboard's naming convention that all courses are of the pattern [SEASON][YEAR]-[COURSE NAME]
+        # also, :3
         if course[:3] != currSemester: continue
 
         # get the HTML page for the specific set of grades we want

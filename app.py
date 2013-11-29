@@ -29,15 +29,19 @@ def uninstall():
 def run():
     
     # fetches grades from blackboard
-    courses = get_blackboard_grades()
+    try:
+        courses = get_blackboard_grades()
+    except Exception:
+        return
     
     # gets saved grades
     data = {}
     exists = os.path.exists('grades.json')
     if exists:
-        f = open('grades.json', 'r+')
+        f = open(os.path.dirname(os.path.realpath(__file__)) + '/grades.json', 'r+')
         old_courses = json.loads(f.read())
         f.seek(0)
+        f.truncate()
 
         # essentially diff the new scores and old scores
         new_scores = {}
