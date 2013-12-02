@@ -57,9 +57,9 @@ def run():
 
     # gets saved grades
     data = {}
-    exists = os.path.exists('grades.json')
+    path = os.path.dirname(os.path.realpath(__file__)) + '/grades.json'
+    exists = os.path.exists(path)
     if exists:
-        path = os.path.dirname(os.path.realpath(__file__)) + '/grades.json'
         f = open(path, 'r+')
         try:
             old_data = json.loads(f.read())
