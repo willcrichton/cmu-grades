@@ -25,46 +25,79 @@ def uninstall():
     cron.write()
     print 'Uninstalled cmu-grades!'
 
+def send_text(message):
+    client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN)    
+    client.sms.messages.create(to=PHONE_NUMBER, from_=TWILIO_NUMBER, body=message.strip())
+
+def diff(old, new):
+    new_scores = {}
+    for course, grades in new.iteritems():
+        if not course in old: break
+        old_grades = old[course]
+        if isinstance(grades, basestring) and grades != old_grades:
+            new_scores[course] = grades
+        else:
+            new_grades = [(hw, grades[hw]) for hw in grades if hw not in old_grades]
+            if len(new_grades) > 0:
+                new_scores[course] = new_grades
+
+    return new_scores
+
 # sends text if grades have changed
 def run():
     
     # fetches grades from blackboard
     try:
-        courses = get_blackboard_grades()
+        courses = get_blackboard_grades()    
+        finals = get_final_grades()
     except Exception:
         return
     
+    finals['21-241'] = 'Q'
+
     # gets saved grades
     data = {}
     exists = os.path.exists('grades.json')
     if exists:
-        f = open(os.path.dirname(os.path.realpath(__file__)) + '/grades.json', 'r+')
-        old_courses = json.loads(f.read())
+        path = os.path.dirname(os.path.realpath(__file__)) + '/grades.json'
+        f = open(path, 'r+')
+        try:
+            old_data = json.loads(f.read())
+        except:
+            # delete malformed json
+            f.close()
+            os.remove(path)
+            return
+
         f.seek(0)
         f.truncate()
 
-        # essentially diff the new scores and old scores
-        new_scores = {}
-        for course, grades in courses.iteritems():
-            if not course in old_courses: break
-            old_grades = old_courses[course]
-            new_hw = [(hw, grades[hw]) for hw in grades if hw not in old_grades]
-            if len(new_hw) > 0:
-                new_scores[course] = new_hw
+        old_courses = old_data['courses']
+        old_finals = old_data['finals']
 
-        # send a text if scores have changed
-        if len(new_scores) > 0:
-            client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN)
-            message = 'New grades!\n'
-            for course in new_scores:
-                message += course + ': ' + ', '.join(map(lambda hw: hw[0] + ' [' + str(round(100.0 * hw[1][0] / hw[1][1])) + ']', new_scores[course])) + '\n'
-            client.sms.messages.create(to=PHONE_NUMBER, from_=TWILIO_NUMBER, body=message)
-    
+        bb_diff = diff(old_courses, courses)
+
+        # send a text if blackboard scores have changed
+        if len(bb_diff) > 0:
+            message = 'New Blackboard grades!\n'
+            for course, grades in bb_diff.iteritems():
+                mapper = lambda hw: hw[0] + ' [' + str(round(100.0 * hw[1][0] / hw[1][1])) + ']'
+                message += '%s: %s\n' % (course, ', '.join(map(mapper, grades)))
+            send_text(message)
+
+        # same for finals from academic audit
+        final_diff = diff(old_finals, finals)
+        if len(final_diff) > 0:
+            message = 'New final grades!\n'
+            for course, grade in final_diff.iteritems():
+                message += '%s: %s\n' % (course, grade)
+            send_text(message)
+
     else:
         f = open('grades.json', 'w')
 
     # write out the new scores
-    f.write(json.dumps(courses))
+    f.write(json.dumps({'courses': courses, 'finals': finals}))
     f.close()
 
 
