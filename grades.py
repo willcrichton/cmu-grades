@@ -42,6 +42,36 @@ def get_final_grades():
                     
     return courses
 
+def get_autolab_grades():
+    s = authenticate('https://autolab.cs.cmu.edu')
+    
+    main = s.get('https://autolab.cs.cmu.edu').content
+    d = pq(main)
+    current_courses = d('#content > ul > li > a')
+    grades = {}
+
+    for course in current_courses:
+        course_page = s.get('https://autolab.cs.cmu.edu%s/gradebook/student' % d(course).attr('href')).content
+        course_name = d(course).text()
+        cd = pq(course_page)
+
+        grades[course_name] = {}
+
+        assignments = cd('.grades tr')
+        for assgn in assignments:
+            if d(assgn).attr('class') == 'header': continue
+            grade = d(assgn).text()
+            matches = re.search('^([\D\s]*) \d ([\d\.]+) / ([\d\.]+)$', grade)
+
+            if matches is not None:
+                name = matches.group(1)
+                score = float(matches.group(2))
+                total = float(matches.group(3))
+
+                grades[course_name][name] = [score, total]
+                
+
+    return grades
 
 def get_sio():
     ''' get information from SIO

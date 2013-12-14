@@ -50,11 +50,11 @@ def run():
     try:
         courses = get_blackboard_grades()    
         finals = get_final_grades()
+        autolab = get_autolab_grades()
     except Exception:
+        print 'Retrieving grades failed...'
         return
     
-    finals['21-241'] = 'Q'
-
     # gets saved grades
     data = {}
     path = os.path.dirname(os.path.realpath(__file__)) + '/grades.json'
@@ -74,10 +74,10 @@ def run():
 
         old_courses = old_data['courses']
         old_finals = old_data['finals']
-
-        bb_diff = diff(old_courses, courses)
+        old_autolab = old_data['autolab']
 
         # send a text if blackboard scores have changed
+        bb_diff = diff(old_courses, courses)
         if len(bb_diff) > 0:
             message = 'New Blackboard grades!\n'
             for course, grades in bb_diff.iteritems():
@@ -93,11 +93,20 @@ def run():
                 message += '%s: %s\n' % (course, grade)
             send_text(message)
 
+        # same for autolab grades
+        autolab_diff = diff(old_autolab, autolab)
+        if len(autolab_diff) > 0:
+            message = 'New Autolab grades!\n'
+            for course, grades in autolab_diff.iteritems():
+                mapper = lambda hw: hw[0] + ' [' + str(round(100.0 * hw[1][0] / hw[1][1])) + ']'
+                message += '%s: %s\n' % (course, ', '.join(map(mapper, grades)))
+            send_text(message)
+
     else:
         f = open('grades.json', 'w')
 
     # write out the new scores
-    f.write(json.dumps({'courses': courses, 'finals': finals}))
+    f.write(json.dumps({'courses': courses, 'finals': finals, 'autolab': autolab}))
     f.close()
 
 
