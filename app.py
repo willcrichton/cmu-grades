@@ -8,6 +8,8 @@ import os
 import json
 import site
 
+DEBUG = False
+
 # writes job to the cron
 def install():
     cron = CronTab()
@@ -52,7 +54,8 @@ def run():
         finals = get_final_grades()
         autolab = get_autolab_grades()
     except Exception:
-        print 'Retrieving grades failed...'
+        if DEBUG:
+            print 'Retrieving grades failed...'
         return
     
     # gets saved grades
