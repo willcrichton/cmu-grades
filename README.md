@@ -25,4 +25,6 @@ As you can see, using an automated login requires storing your password. Hence, 
 the grounds of security--storing your password somewhere is bad! But, you know, if you really need automated logins,
 the option is there. I personally base64 encoded my password so it's not immediately obvious when you open the file.
 
-Lastly, to install the app, run `python app.py install`. To uninstall the app, run `python app.py uninstall`.
+To install the texting service, run `python app.py install_text`. Similarly, to install the email service, run `python app.py install_email`.
+
+To uninstall a service, run `python app.py uninstall_text` or `python app.py uninstall_email`.
