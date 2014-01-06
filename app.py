@@ -7,29 +7,63 @@ import sys
 import os
 import json
 import site
+import smtplib
+from email.mime.text import MIMEText
 
 DEBUG = False
 
 # writes job to the cron
-def install():
+def install_text():
+    install('text')
+
+def install_email():
+    install('email')
+
+def install(service):
     cron = CronTab()
-    command = 'export PYTHONPATH=%s; python %s run' % (site.getsitepackages()[0], os.path.realpath(__file__))
-    job = cron.new(command=command, comment='cmu-grades')
+    command = 'export PYTHONPATH=%s; python %s run_%s' % (site.getsitepackages()[0], os.path.realpath(__file__), service)
+    comment = 'cmu-grades-%s' % service
+    job = cron.new(command=command, comment=comment)
     job.minute.every(5)
     cron.write()
-    print 'Installed cmu-grades!'
+    print 'Installed cmu-grades %s service!' % service
+
 
 # removes job from the cron
-def uninstall():
+def uninstall_text():
+    uninstall('text')
+
+def uninstall_email():
+    uninstall('email')
+
+def uninstall(service):
     cron = CronTab()
-    job = cron.find_comment('cmu-grades')
+    comment = 'cmu-grades-%s' % service
+    job = cron.find_comment(comment)
     cron.remove(job[0])
     cron.write()
-    print 'Uninstalled cmu-grades!'
+    print 'Uninstalled cmu-grades %s service!' % service
+
 
 def send_text(message):
-    client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN)    
+    client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN)
     client.sms.messages.create(to=PHONE_NUMBER, from_=TWILIO_NUMBER, body=message.strip())
+
+def send_email(message):
+    s = smtplib.SMTP('smtp.gmail.com:587')
+    s.starttls()
+    s.login(EMAIL, EMAIL_PASSWORD)
+
+    email  = 'Hey %s,\n\n' % NAME
+    email += 'This is your grade update from CMU Grades:\n\n'
+    email += message
+
+    mime = MIMEText(email)
+    mime['Subject'] = 'CMU Grades Update!'
+    mime['To'] = EMAIL
+
+    s.sendmail(EMAIL, EMAIL, mime.as_string())
+    s.quit()
 
 def diff(old, new):
     new_scores = {}
@@ -45,19 +79,23 @@ def diff(old, new):
 
     return new_scores
 
-# sends text if grades have changed
-def run():
-    
+def run_text():
+    run(send_text)
+
+def run_email():
+    run(send_email)
+
+def run(method):
     # fetches grades from blackboard
     try:
-        courses = get_blackboard_grades()    
+        courses = get_blackboard_grades()
         finals = get_final_grades()
         autolab = get_autolab_grades()
     except Exception:
         if DEBUG:
             print 'Retrieving grades failed...'
         return
-    
+
     # gets saved grades
     data = {}
     path = os.path.dirname(os.path.realpath(__file__)) + '/grades.json'
@@ -86,7 +124,7 @@ def run():
             for course, grades in bb_diff.iteritems():
                 mapper = lambda hw: hw[0] + ' [' + str(round(100.0 * hw[1][0] / hw[1][1])) + ']'
                 message += '%s: %s\n' % (course, ', '.join(map(mapper, grades)))
-            send_text(message)
+            method(message)
 
         # same for finals from academic audit
         final_diff = diff(old_finals, finals)
@@ -94,7 +132,7 @@ def run():
             message = 'New final grades!\n'
             for course, grade in final_diff.iteritems():
                 message += '%s: %s\n' % (course, grade)
-            send_text(message)
+            method(message)
 
         # same for autolab grades
         autolab_diff = diff(old_autolab, autolab)
@@ -103,8 +141,7 @@ def run():
             for course, grades in autolab_diff.iteritems():
                 mapper = lambda hw: hw[0] + ' [' + str(round(100.0 * hw[1][0] / hw[1][1])) + ']'
                 message += '%s: %s\n' % (course, ', '.join(map(mapper, grades)))
-            send_text(message)
-
+            method(message)
     else:
         f = open('grades.json', 'w')
 
@@ -114,9 +151,12 @@ def run():
 
 
 COMMANDS = {
-    'install': install,
-    'uninstall': uninstall,
-    'run': run
+    'install_text': install_text,
+    'uninstall_text': uninstall_text,
+    'run_text': run_text,
+    'install_email': install_email,
+    'uninstall_email': uninstall_email,
+    'run_email': run_email
 }
 
 def main():
@@ -128,4 +168,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
