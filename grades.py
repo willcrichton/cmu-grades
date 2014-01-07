@@ -75,18 +75,36 @@ def get_autolab_grades():
 
 def get_sio():
     ''' get information from SIO
-    CURRENTLY BROKEN: HOW DOES RPC WORK??? 
-    TODO: FIX THIS
+    TODO: parse GWT response
     '''
 
     s = authenticate('https://s3.as.cmu.edu/sio/index.html')
     s.headers['Origin'] = 'https://s3.as.cmu.edu'
     s.headers['Referer'] = 'https://s3.as.cmu.edu/sio/index.html'
     s.headers['X-GWT-Module-Base'] = 'https://s3.as.cmu.edu/sio/sio/'
-    s.headers['X-GWT-Permutation'] = 'BF8DF859F201A217774ED328C558EDE1'
-    s.headers['Content-Type'] = 'text/x-gwt-rpc'
+    s.headers['DNT'] = '1'
+    s.headers['Content-Type'] = 'text/x-gwt-rpc; charset=UTF-8'
 
-    print s.post('https://s3.as.cmu.edu/sio/sio/grades.rpc', data='7|0|4|https://s3.as.cmu.edu/sio/sio/|D954B1065FB984249A8E6FE7AC94FE73|edu.cmu.s3.ui.sio.student.client.serverproxy.grades.GradesService|fetchSemesterGrades|1|2|3|4|0|').content
+    siojs = s.get('https://s3.as.cmu.edu/sio/sio/sio.nocache.js').content
+    permutation = re.search("Ub='([^']+)'", siojs).group(1)
+    s.headers['X-GWT-Permutation'] = permutation
+
+    page_name = 'https://s3.as.cmu.edu/sio/sio/%s.cache.html' % (permutation)
+    cachehtml = s.get(page_name).content
+
+    auth_key = re.search("vLi='([^']+)'", cachehtml).group(1)
+    context_key = re.search("cHi='([^']+)'", cachehtml).group(1)
+    content_key = re.search("BMi='([^']+)'", cachehtml).group(1)
+    
+    # info in user context: full name, major/school
+    s.post('https://s3.as.cmu.edu/sio/sio/userContext.rpc', 
+           data=('7|0|4|https://s3.as.cmu.edu/sio/sio/|%s|edu.cmu.s3.ui.common.client.serverproxy.user.UserContextService|initUserContext|1|2|3|4|0|' % context_key))
+
+    s.post('https://s3.as.cmu.edu/sio/sio/authorization.rpc', 
+                 data=('7|0|4|https://s3.as.cmu.edu/sio/sio/|%s|edu.cmu.s3.ui.sio.common.client.serverproxy.AuthorizationService|initLoggedInAsStudent|1|2|3|4|0|' % auth_key))
+
+    s.post('https://s3.as.cmu.edu/sio/sio/bioinfo.rpc',
+                 data=('7|0|4|https://s3.as.cmu.edu/sio/sio/|%s|edu.cmu.s3.ui.sio.student.client.serverproxy.bio.StudentBioService|fetchStudentSMCBoxInfo|1|2|3|4|0|' % content_key)).content
 
 
 def get_blackboard_grades():
