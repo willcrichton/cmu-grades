@@ -2,6 +2,7 @@ from pyquery import PyQuery as pq
 from auth import authenticate
 from datetime import datetime
 from urllib import urlencode
+from icalendar import Calendar, Event, UTC
 import re
 import json
 
@@ -75,7 +76,7 @@ def get_autolab_grades():
 
 def get_sio():
     ''' get information from SIO
-    TODO: parse GWT response
+    TODO: figure out how to parse shit like the finances response
     '''
 
     s = authenticate('https://s3.as.cmu.edu/sio/index.html')
@@ -92,19 +93,49 @@ def get_sio():
     page_name = 'https://s3.as.cmu.edu/sio/sio/%s.cache.html' % (permutation)
     cachehtml = s.get(page_name).content
 
-    auth_key = re.search("vLi='([^']+)'", cachehtml).group(1)
-    context_key = re.search("cHi='([^']+)'", cachehtml).group(1)
-    content_key = re.search("BMi='([^']+)'", cachehtml).group(1)
+    # to successfully do RPC with SIO, you have to find the correct keys 
+    # for each different kind of RPC you're doing and send them with the request
+    def get_key(key):
+        var_name = re.search("'%s',(\w+)," % key, cachehtml).group(1)
+        return re.search("%s='([^']+)'" % var_name, cachehtml).group(1)
+
+    context_key = get_key('userContext.rpc')
+    content_key = get_key('bioinfo.rpc')
+
+    # GWT returns something that's _almost_ JSON but not quite
+    def parse_gwt(gwt_response):
+        return json.loads(gwt_response.replace("'", '"').replace("\\", "\\\\")[4:])
     
+    return_data = {}
+
     # info in user context: full name, major/school
     s.post('https://s3.as.cmu.edu/sio/sio/userContext.rpc', 
            data=('7|0|4|https://s3.as.cmu.edu/sio/sio/|%s|edu.cmu.s3.ui.common.client.serverproxy.user.UserContextService|initUserContext|1|2|3|4|0|' % context_key))
 
-    s.post('https://s3.as.cmu.edu/sio/sio/authorization.rpc', 
-                 data=('7|0|4|https://s3.as.cmu.edu/sio/sio/|%s|edu.cmu.s3.ui.sio.common.client.serverproxy.AuthorizationService|initLoggedInAsStudent|1|2|3|4|0|' % auth_key))
+    # get mailbox/smc
+    gwt_response =  s.post('https://s3.as.cmu.edu/sio/sio/bioinfo.rpc',
+                           data=('7|0|4|https://s3.as.cmu.edu/sio/sio/|%s|edu.cmu.s3.ui.sio.student.client.serverproxy.bio.StudentBioService|fetchStudentSMCBoxInfo|1|2|3|4|0|' % content_key)).content
+    sio_json = parse_gwt(gwt_response) 
 
-    s.post('https://s3.as.cmu.edu/sio/sio/bioinfo.rpc',
-                 data=('7|0|4|https://s3.as.cmu.edu/sio/sio/|%s|edu.cmu.s3.ui.sio.student.client.serverproxy.bio.StudentBioService|fetchStudentSMCBoxInfo|1|2|3|4|0|' % content_key)).content
+    return_data['smc'] = sio_json[5][2]
+    return_data['mailbox_combo'] = sio_json[5][1]
+
+    # get schedule
+    cal = Calendar.from_string(s.get('https://s3.as.cmu.edu/sio/export/schedule/S14_semester.ics?semester=S14').content)
+    day_map = {'MO': 1, 'TU': 2, 'WE': 3, 'TH': 4, 'FR': 5}
+    return_data['schedule'] = []
+    for event in cal.walk():
+        if event.name != 'VEVENT': continue
+
+        return_data['schedule'].append({
+            'days': map(lambda day: day_map[day], event.get('rrule').get('byday')),
+            'location': event.get('location').strip(),
+            'summary': event.get('summary').strip(),
+            'start_time': event.get('dtstart').dt,
+            'end_time': event.get('dtend').dt
+        })
+
+    return return_data
 
 
 def get_blackboard_grades():
