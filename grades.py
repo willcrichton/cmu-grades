@@ -80,15 +80,10 @@ def get_sio():
     '''
 
     s = authenticate('https://s3.as.cmu.edu/sio/index.html')
-    s.headers['Origin'] = 'https://s3.as.cmu.edu'
-    s.headers['Referer'] = 'https://s3.as.cmu.edu/sio/index.html'
-    s.headers['X-GWT-Module-Base'] = 'https://s3.as.cmu.edu/sio/sio/'
-    s.headers['DNT'] = '1'
     s.headers['Content-Type'] = 'text/x-gwt-rpc; charset=UTF-8'
 
     siojs = s.get('https://s3.as.cmu.edu/sio/sio/sio.nocache.js').content
     permutation = re.search("Ub='([^']+)'", siojs).group(1)
-    s.headers['X-GWT-Permutation'] = permutation
 
     page_name = 'https://s3.as.cmu.edu/sio/sio/%s.cache.html' % (permutation)
     cachehtml = s.get(page_name).content
