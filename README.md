@@ -3,7 +3,7 @@ cmu-grades
 
 **Note**: If you're just curious about using the Shibboleth/WebISO authentication, take a look at `auth.py`.
 
-CMU-Grades is a Python app for CMU students which will text you via Twilio whenever you get new grades on Blackboard, Autolab, or Academic Audit (i.e. final grades).
+CMU-Grades is a Python app for CMU students which will text you via Twilio or email you whenever you get new grades on Blackboard, Autolab, or Academic Audit (i.e. final grades). It also has utilities for accessing your SMC #, mailbox combo, and schedule on SIO.
 
 To setup, first you need to install [pip](https://pypi.python.org/pypi/pip) and run `pip install -r requirements.txt`.
 
