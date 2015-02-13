@@ -45,15 +45,19 @@ def get_final_grades():
 
 # TODO: fix autolab
 def get_autolab_grades():
-    s = authenticate('https://autolab.cs.cmu.edu')
+    s = authenticate('https://autolab.cs.cmu.edu/auth/users/auth/shibboleth')
 
     main = s.get('https://autolab.cs.cmu.edu').content
     d = pq(main)
-    current_courses = d('#content > ul > li > a')
+    current_courses = d('#content > .rolodex > .course > h1 > a')
     grades = {}
 
     for course in current_courses:
-        course_page = s.get('https://autolab.cs.cmu.edu%s/gradebook/student' % d(course).attr('href')).content
+        page_1 = s.get('https://autolab.cs.cmu.edu%s/assessments' % d(course).attr('href')).content
+        gradebook = pq(pq(page_1)('.action-links > li > a')[1]).attr('href')
+
+        course_page = s.get('https://autolab.cs.cmu.edu%s' % gradebook).content
+        #s.get('https://autolab.cs.cmu.edu%s/gradebook/student' % d(course).attr('href')).content
         course_name = d(course).text()
         cd = pq(course_page)
 
@@ -63,12 +67,12 @@ def get_autolab_grades():
         for assgn in assignments:
             if d(assgn).attr('class') == 'header': continue
             grade = d(assgn).text()
-            matches = re.search('^([\D\s]*) \d ([\d\.]+) / ([\d\.]+)$', grade)
+            matches = re.search('^([A-Za-z_\d]*) (\d )?\d ([\d\.]+) / ([\d\.]+)$', grade)
 
             if matches is not None:
                 name = matches.group(1)
-                score = float(matches.group(2))
-                total = float(matches.group(3))
+                score = float(matches.group(3))
+                total = float(matches.group(4))
 
                 grades[course_name][name] = [score, total]
 
@@ -135,7 +139,6 @@ def get_sio():
 
     return return_data
 
-# TODO: fix blackboard
 def get_blackboard_grades():
     ''' returns all your grades from the current semester
     returns a json of courses mapping to a json of homeworks mapping to an array of [score, total]
@@ -174,14 +177,14 @@ def get_blackboard_grades():
 
         # use pyquery (like jQuery) to extract grades
         d = pq(html)
-        for homework in d('.grade-item'):
-            hw = d(homework).find('.name').text().strip()
-            grade = d(homework).find('.gradeCellGrade').text()
+        for homework in d('.graded_item_row'):
+            hw = d(homework).find('.gradable').text().strip()
+            grade = d(homework).find('span.grade').text().strip()
             if grade is None: continue
 
-            matches = re.search('([\d\.]+)\s*/([\d\.]+) Grade$', grade)
-            if matches is None: continue
+	    possible = d(homework).find('span.pointsPossible').text().strip()[1:]
+	    if possible is None: continue
 
-            grades[course][hw] = [float(matches.group(1)), float(matches.group(2))]
+            grades[course][hw] = [float(grade), float(possible)]
 
     return grades

@@ -16,12 +16,15 @@ def authenticate(url):
     s = requests.Session()
 
     # 1. Initiate sequence by querying the protected asset
-    s.get(url)
+    if("https://autolab.cs.cmu.edu/" in url):
+    	s.get(url, verify=False)
+    else:
+	s.get(url)
 
     # 2. Login to CMU's WebISO "Stateless" page
     s.headers = {'Host': 'login.cmu.edu', 'Referer': 'https://login.cmu.edu/idp/Authn/Stateless'}
-    form = s.post('https://login.cmu.edu/idp/Authn/Stateless', 
-                  data={'j_username': USERNAME, 'j_password': PASSWORD, 
+    form = s.post('https://login.cmu.edu/idp/Authn/Stateless',
+                  data={'j_username': USERNAME, 'j_password': PASSWORD,
                         'j_continue': '1', 'submit': 'Login'}).content
 
     # 3. Parse resultant HTML and send corresponding POST request
