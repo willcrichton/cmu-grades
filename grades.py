@@ -43,7 +43,6 @@ def get_final_grades():
 
     return courses
 
-# TODO: fix autolab
 def get_autolab_grades():
     s = authenticate('https://autolab.cs.cmu.edu/auth/users/auth/shibboleth')
 
