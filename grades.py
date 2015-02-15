@@ -56,7 +56,6 @@ def get_autolab_grades():
         gradebook = pq(pq(page_1)('.action-links > li > a')[1]).attr('href')
 
         course_page = s.get('https://autolab.cs.cmu.edu%s' % gradebook).content
-        #s.get('https://autolab.cs.cmu.edu%s/gradebook/student' % d(course).attr('href')).content
         course_name = d(course).text()
         cd = pq(course_page)
 
