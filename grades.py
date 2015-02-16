@@ -44,7 +44,8 @@ def get_final_grades():
     return courses
 
 def get_autolab_grades():
-    s = authenticate('https://autolab.cs.cmu.edu/auth/users/auth/shibboleth')
+    #Autolab has their SSL certificates misconfigured, so we won't verify them
+    s = authenticate('https://autolab.cs.cmu.edu/auth/users/auth/shibboleth',{"verify":False})
 
     main = s.get('https://autolab.cs.cmu.edu').content
     d = pq(main)
