@@ -64,15 +64,13 @@ def get_autolab_grades():
         assignments = cd('.grades tr')
         for assgn in assignments:
             if d(assgn).attr('class') == 'header': continue
-            grade = d(assgn).text()
-            matches = re.search('^([A-Za-z_\d]*) (\d )?\d ([\d\.]+) / ([\d\.]+)$', grade)
 
-            if matches is not None:
-                name = matches.group(1)
-                score = float(matches.group(3))
-                total = float(matches.group(4))
+            name = cd(assgn).find("td > span > a").text()
+            score = cd(assgn).find("td > a").text()
+            total = cd(assgn).find("span.max_score").text()
 
-                grades[course_name][name] = [score, total]
+	    if name is not None and score is not None and total is not None:
+	        grades[course_name][name] = [float(score), float(total)]
 
 
     return grades
